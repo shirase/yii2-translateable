@@ -35,6 +35,8 @@ class TranslateableBehavior extends Behavior
      */
     public $translationAttributes;
 
+    private $translationsForLink = [];
+
     /**
      * @inheritdoc
      */
@@ -42,6 +44,8 @@ class TranslateableBehavior extends Behavior
     {
         return [
             ActiveRecord::EVENT_AFTER_VALIDATE => 'afterValidate',
+            ActiveRecord::EVENT_BEFORE_INSERT => 'beforeSave',
+            ActiveRecord::EVENT_BEFORE_UPDATE => 'beforeSave',
             ActiveRecord::EVENT_AFTER_INSERT => 'afterSave',
             ActiveRecord::EVENT_AFTER_UPDATE => 'afterSave',
         ];
@@ -129,13 +133,21 @@ class TranslateableBehavior extends Behavior
         }
     }
 
+    public function beforeSave()
+    {
+        $this->translationsForLink = [];
+        foreach ($this->owner->{$this->translationRelation} as $translation) {
+            $this->translationsForLink[] = $translation;
+        }
+    }
+
     /**
      * @return void
      */
     public function afterSave()
     {
         /* @var ActiveRecord $translation */
-        foreach ($this->owner->{$this->translationRelation} as $translation) {
+        foreach ($this->translationsForLink as $translation) {
             $this->owner->link($this->translationRelation, $translation);
         }
     }
